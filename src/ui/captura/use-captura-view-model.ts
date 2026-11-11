@@ -9,12 +9,12 @@ import type { Perro } from '@/domain/models/perro';
 export type PasoCaptura = 'listo' | 'fotografiando' | 'ubicando' | 'guardando';
  
 type Parametros = {
-  apodo: string;
+  entrenadorId: string;
   // Solo escuchamos el acelerómetro mientras la pantalla está a la vista.
   activo: boolean;
 };
  
-export function useCapturaViewModel({ apodo, activo }: Parametros) {
+export function useCapturaViewModel({ entrenadorId, activo }: Parametros) {
   const [perros, setPerros] = useState<Perro[]>([]);
   const [perroId, setPerroId] = useState<string | null>(null);
   const [paso, setPaso] = useState<PasoCaptura>('listo');
@@ -66,7 +66,7 @@ export function useCapturaViewModel({ apodo, activo }: Parametros) {
  
         setPaso('guardando');
         await avistamientosRepository.registrarCaptura(
-          { perroId, apodo, fotoUri, latitud, longitud },
+          { perroId, entrenadorId, fotoUri, latitud, longitud },
           controlador.signal,
         );
         return true;
@@ -81,7 +81,7 @@ export function useCapturaViewModel({ apodo, activo }: Parametros) {
         setPaso('listo');
       }
     },
-    [perroId, apodo],
+    [perroId, entrenadorId],
   );
  
   return {

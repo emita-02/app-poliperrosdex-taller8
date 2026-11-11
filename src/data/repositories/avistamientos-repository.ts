@@ -1,50 +1,55 @@
 import { File } from 'expo-file-system';
- 
+
 import type { Avistamiento } from '@/domain/models/avistamiento';
- 
+
 import { subirImagen, supabase, urlPublica } from '../services/supabase-service';
- 
+
+// Supuesto: avistamientos.entrenador_id (uuid) tiene FK a entrenadores.id.
+// Esa FK es la que permite pedir el nombre con entrenador:entrenadores(nombre),
+// igual que ya se hace con perro:perros(nombre).
 type FilaAvistamiento = {
   id: string;
   perro_id: string;
-  apodo: string;
+  entrenador_id: string;
   foto_path: string;
   latitud: number;
   longitud: number;
   creado_en: string;
   perro: { nombre: string } | null;
+  entrenador: { nombre: string } | null;
 };
- 
+
 const COLUMNAS =
-  'id, perro_id, apodo, foto_path, latitud, longitud, creado_en, perro:perros(nombre)';
- 
+  'id, perro_id, entrenador_id, foto_path, latitud, longitud, creado_en, perro:perros(nombre), entrenador:entrenadores(nombre)';
+
 function aDominio(fila: FilaAvistamiento): Avistamiento {
   return {
     id: fila.id,
     perroId: fila.perro_id,
     nombrePerro: fila.perro?.nombre ?? 'Perro desconocido',
-    apodo: fila.apodo,
+    entrenadorId: fila.entrenador_id,
+    nombreEntrenador: fila.entrenador?.nombre ?? 'Entrenador',
     fotoUrl: urlPublica(fila.foto_path),
     latitud: fila.latitud,
     longitud: fila.longitud,
     creadoEn: fila.creado_en,
   };
 }
- 
+
 // No usamos signal.throwIfAborted(): existe en los navegadores, pero el
 // AbortSignal de React Native no la trae y fallaría en el teléfono.
 function cortarSiSeCancelo(signal?: AbortSignal) {
   if (signal?.aborted) throw new Error('Captura cancelada');
 }
- 
+
 type NuevaCaptura = {
   perroId: string;
-  apodo: string;
+  entrenadorId: string;
   fotoUri: string;
   latitud: number;
   longitud: number;
 };
- 
+
 export const avistamientosRepository = {
   async listar(perroId?: string): Promise<Avistamiento[]> {
     let consulta = supabase
@@ -52,22 +57,24 @@ export const avistamientosRepository = {
       .select(COLUMNAS)
       .order('creado_en', { ascending: false });
     if (perroId) consulta = consulta.eq('perro_id', perroId);
- 
+
     const { data, error } = await consulta;
     if (error)
       throw new Error(`No se pudieron cargar los avistamientos: ${error.message}`);
     return (data as unknown as FilaAvistamiento[]).map(aDominio);
   },
- 
-  async perrosCapturadosPor(apodo: string): Promise<Set<string>> {
+
+  // El filtro es explícito porque la lectura es pública (el mapa muestra
+  // los avistamientos de todos); RLS no lo hace por nosotros.
+  async perrosCapturadosPor(entrenadorId: string): Promise<Set<string>> {
     const { data, error } = await supabase
       .from('avistamientos')
       .select('perro_id')
-      .eq('apodo', apodo);
+      .eq('entrenador_id', entrenadorId);
     if (error) throw new Error(`No se pudo revisar tus capturas: ${error.message}`);
     return new Set(data.map((fila) => fila.perro_id as string));
   },
- 
+
   // Para el ViewModel, "registrar una captura" es una sola operación.
   // Que por dentro sean dos (subir a Storage e insertar en la tabla)
   // es un detalle de datos que el repositorio esconde.
@@ -77,21 +84,25 @@ export const avistamientosRepository = {
   async registrarCaptura(captura: NuevaCaptura, signal?: AbortSignal): Promise<void> {
     const bytes = await new File(captura.fotoUri).arrayBuffer();
     const aleatorio = Math.random().toString(36).slice(2, 8);
-    const ruta = `capturas/${Date.now()}-${aleatorio}.jpg`;
- 
+    // La carpeta lleva el id del entrenador: la política de Storage exige
+    // que coincida con auth.uid(), así nadie sube fotos a nombre de otro.
+    const ruta = `capturas/${captura.entrenadorId}/${Date.now()}-${aleatorio}.jpg`;
+
     cortarSiSeCancelo(signal);
     await subirImagen(ruta, bytes);
     cortarSiSeCancelo(signal);
- 
+
+    // Enviamos nuestro id, pero la política de inserción comprueba que sea
+    // el de la sesión: un id ajeno es rechazado por la base de datos.
     let insercion = supabase.from('avistamientos').insert({
       perro_id: captura.perroId,
-      apodo: captura.apodo,
+      entrenador_id: captura.entrenadorId,
       foto_path: ruta,
       latitud: captura.latitud,
       longitud: captura.longitud,
     });
     if (signal) insercion = insercion.abortSignal(signal);
- 
+
     const { error } = await insercion;
     if (error) throw new Error(`No se pudo guardar el avistamiento: ${error.message}`);
   },

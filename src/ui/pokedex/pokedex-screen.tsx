@@ -1,36 +1,38 @@
 import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
- 
-import { useApodo } from '@/ui/core/apodo-view-model';
+
+import { PantallaLogin } from '@/app/(tabs)/login';
+import { useEntrenador } from '@/ui/core/entrenador-view-model';
 import { Estado } from '@/ui/core/estado';
-import { FormularioApodo } from '@/ui/core/formulario-apodo';
 import { colores, espacio } from '@/ui/core/tema';
 import { Texto } from '@/ui/core/texto';
- 
+
 import { TarjetaPerro } from './tarjeta-perro';
 import { usePokedexViewModel } from './use-pokedex-view-model';
- 
+
 // La pantalla se parte en dos porque un hook no puede llamarse de forma
-// condicional: primero vemos si hay apodo y solo entonces creamos el
-// ViewModel, que necesita ese apodo para consultar.
+// condicional: primero vemos si hay sesión y solo entonces creamos el
+// ViewModel, que necesita el id del entrenador para consultar.
 export function PokedexScreen() {
-  const { apodo, listo } = useApodo();
- 
+  const { entrenador, listo } = useEntrenador();
+
   if (!listo) return <Estado cargando />;
-  if (!apodo) return <FormularioApodo />;
-  return <ListaPokedex apodo={apodo} />;
+  if (!entrenador) return <PantallaLogin />;
+  return <ListaPokedex entrenadorId={entrenador.id} nombre={entrenador.nombre} />;
 }
- 
-function ListaPokedex({ apodo }: { apodo: string }) {
-  const { olvidarApodo } = useApodo();
-  const vm = usePokedexViewModel(apodo);
- 
+
+type Props = { entrenadorId: string; nombre: string };
+
+function ListaPokedex({ entrenadorId, nombre }: Props) {
+  const { cerrarSesion } = useEntrenador();
+  const vm = usePokedexViewModel(entrenadorId);
+
   if (vm.cargando || (vm.error && vm.perros.length === 0)) {
     return (
       <Estado cargando={vm.cargando} error={vm.error} onReintentar={vm.recargar} />
     );
   }
- 
+
   return (
     <FlatList
       data={vm.perros}
@@ -39,11 +41,11 @@ function ListaPokedex({ apodo }: { apodo: string }) {
       ItemSeparatorComponent={() => <View style={{ height: espacio.s }} />}
       ListHeaderComponent={
         <View style={estilos.cabecera}>
-          <Texto variante="nota">Entrenador: {apodo}</Texto>
+          <Texto variante="nota">Entrenador: {nombre}</Texto>
           <Texto variante="subtitulo">{vm.resumen}</Texto>
-          <Pressable onPress={olvidarApodo} hitSlop={8}>
+          <Pressable onPress={cerrarSesion} hitSlop={8}>
             <Texto variante="nota" style={estilos.enlace}>
-              Cambiar apodo
+              Cerrar sesión
             </Texto>
           </Pressable>
         </View>
@@ -60,7 +62,7 @@ function ListaPokedex({ apodo }: { apodo: string }) {
     />
   );
 }
- 
+
 const estilos = StyleSheet.create({
   lista: { padding: espacio.m },
   cabecera: { gap: espacio.xs, marginBottom: espacio.m },

@@ -9,7 +9,7 @@ export type PuntoMapa = {
   lat: number;
   lng: number;
   perro: string;
-  apodo: string;
+  entrenador: string;
   fecha: string;
   foto: string;
 };
@@ -29,7 +29,7 @@ export function useMapaViewModel() {
           lat: a.latitud,
           lng: a.longitud,
           perro: a.nombrePerro,
-          apodo: a.apodo,
+          entrenador: a.nombreEntrenador,
           fecha: formatearFecha(a.creadoEn),
           foto: a.fotoUrl,
         })),

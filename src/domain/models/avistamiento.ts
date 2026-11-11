@@ -2,7 +2,8 @@ export type Avistamiento = {
   id: string;
   perroId: string;
   nombrePerro: string;
-  apodo: string;
+  entrenadorId: string;
+  nombreEntrenador: string
   fotoUrl: string;
   latitud: number;
   longitud: number;

@@ -47,3 +47,6 @@ example
 .agents/
 .archify
 skills-lock.json
+
+export_context.js
+contexto_proyecto.md

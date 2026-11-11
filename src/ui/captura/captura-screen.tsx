@@ -3,10 +3,10 @@ import { router, useIsFocused } from 'expo-router';
 import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
  
-import { useApodo } from '@/ui/core/apodo-view-model';
+import { PantallaLogin } from '@/app/(tabs)/login';
 import { Boton } from '@/ui/core/boton';
+import { useEntrenador } from '@/ui/core/entrenador-view-model';
 import { Estado } from '@/ui/core/estado';
-import { FormularioApodo } from '@/ui/core/formulario-apodo';
 import { colores, espacio, fuentes, radio } from '@/ui/core/tema';
 import { Texto } from '@/ui/core/texto';
  
@@ -20,25 +20,25 @@ const TEXTO_PASO: Record<PasoCaptura, string> = {
 };
  
 export function CapturaScreen() {
-  const { apodo, listo } = useApodo();
+  const { entrenador, listo } = useEntrenador();
  
   if (!listo) return <Estado cargando />;
-  // Sin apodo no hay a nombre de quién guardar la captura.
-  if (!apodo) return <FormularioApodo />;
-  return <Camara apodo={apodo} />;
+  // Sin sesión no hay a nombre de quién guardar la captura.
+  if (!entrenador) return <PantallaLogin />;
+  return <Camara entrenadorId={entrenador.id} />;
 }
  
 // La vista solo dibuja lo que el ViewModel le entrega y le avisa de los
 // toques. Las únicas decisiones que toma son de interfaz: el permiso de
 // la cámara y a qué pantalla ir cuando la captura termina bien.
-function Camara({ apodo }: { apodo: string }) {
+function Camara({ entrenadorId }: { entrenadorId: string }) {
   const camara = useRef<CameraView>(null);
   const [permiso, pedirPermiso] = useCameraPermissions();
  
   // Las pestañas siguen montadas aunque no se vean. Con esto, la cámara y
   // el acelerómetro se apagan cuando estás en otra pestaña.
   const enPantalla = useIsFocused();
-  const vm = useCapturaViewModel({ apodo, activo: enPantalla });
+  const vm = useCapturaViewModel({ entrenadorId, activo: enPantalla });
  
   async function alCapturar() {
     const guardado = await vm.capturar(async () => {

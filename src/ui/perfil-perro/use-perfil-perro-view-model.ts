@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
- 
+
 import { avistamientosRepository } from '@/data/repositories/avistamientos-repository';
 import { perrosRepository } from '@/data/repositories/perros-repository';
 import type { Avistamiento } from '@/domain/models/avistamiento';
 import type { Perro } from '@/domain/models/perro';
- 
-export function usePerfilPerroViewModel(perroId: string, apodo: string | null) {
+
+export function usePerfilPerroViewModel(perroId: string, entrenadorId: string | null) {
   const [perro, setPerro] = useState<Perro | null>(null);
   const [avistamientos, setAvistamientos] = useState<Avistamiento[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
- 
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -27,7 +27,7 @@ export function usePerfilPerroViewModel(perroId: string, apodo: string | null) {
       setCargando(false);
     }
   }, [perroId]);
- 
+
   // La primera carga no reutiliza cargar(): esa función pone cargando en true
   // de forma síncrona, y llamar setState directo dentro de un efecto provoca
   // renders en cascada (ESLint lo marca). Además, la bandera "vigente" evita
@@ -49,11 +49,15 @@ export function usePerfilPerroViewModel(perroId: string, apodo: string | null) {
       vigente = false;
     };
   }, [perroId]);
- 
+
   // "Lo tengo" se decide aquí y no en la vista: es una regla del juego,
-  // no una decisión de cómo dibujar.
-  const loTengo = avistamientos.some((a) => a.apodo === apodo);
- 
+  // no una decisión de cómo dibujar. Se compara por id, no por nombre:
+  // dos entrenadores pueden llamarse igual.
+  const esMio = (avistamiento: Avistamiento) =>
+    entrenadorId !== null && avistamiento.entrenadorId === entrenadorId;
+
+  const loTengo = avistamientos.some(esMio);
+
   return {
     perro,
     avistamientos,
@@ -61,7 +65,7 @@ export function usePerfilPerroViewModel(perroId: string, apodo: string | null) {
     descripcion: loTengo
       ? (perro?.descripcion ?? '')
       : 'Captúralo para leer su ficha completa.',
-    esMio: (avistamiento: Avistamiento) => avistamiento.apodo === apodo,
+    esMio,
     cargando,
     error,
     recargar: cargar,

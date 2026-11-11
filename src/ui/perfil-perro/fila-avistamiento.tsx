@@ -17,7 +17,7 @@ export function FilaAvistamiento({ avistamiento, esMio }: Props) {
       <Image source={avistamiento.fotoUrl} style={estilos.foto} contentFit="cover" />
       <View style={estilos.datos}>
         <Texto style={{ fontWeight: '600' }}>
-          {esMio ? `${avistamiento.apodo} (tú)` : avistamiento.apodo}
+          {esMio ? `${avistamiento.nombreEntrenador} (tú)` : avistamiento.nombreEntrenador}
         </Texto>
         <Texto variante="nota">{formatearFecha(avistamiento.creadoEn)}</Texto>
         <Texto variante="nota">

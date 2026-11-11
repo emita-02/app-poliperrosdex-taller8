@@ -1,14 +1,16 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
  
-import { ApodoProvider } from '@/ui/core/apodo-view-model';
 import { colores, fuentes } from '@/ui/core/tema';
+
+import { EntrenadorProvider } from '@/ui/core/entrenador-view-model';
+
  
 // Navegación raíz: un Stack cuya primera pantalla son las pestañas,
 // y encima de ellas el perfil del perro cuando lo abres.
 export default function RootLayout() {
   return (
-    <ApodoProvider>
+    <EntrenadorProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -26,6 +28,6 @@ export default function RootLayout() {
           options={{ title: '', headerBackTitle: 'Volver' }}
         />
       </Stack>
-    </ApodoProvider>
+    </EntrenadorProvider>
   );
 }
